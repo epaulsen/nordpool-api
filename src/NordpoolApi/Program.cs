@@ -6,6 +6,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 
 // Add Nordpool services
+builder.Services.AddHttpClient<INordpoolApiClient, NordpoolApiClient>();
+builder.Services.AddSingleton<NordpoolDataParser>();
 builder.Services.AddSingleton<PriceService>();
 builder.Services.AddSingleton<IPriceService>(sp => sp.GetRequiredService<PriceService>());
 builder.Services.AddHostedService<NordpoolPollingService>();

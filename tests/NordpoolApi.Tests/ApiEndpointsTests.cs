@@ -6,11 +6,11 @@ using Xunit;
 
 namespace NordpoolApi.Tests;
 
-public class ApiEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
+public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
 {
     private readonly HttpClient _client;
 
-    public ApiEndpointsTests(WebApplicationFactory<Program> factory)
+    public ApiEndpointsTests(TestWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
     }
@@ -40,7 +40,8 @@ public class ApiEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         var prices = await response.Content.ReadFromJsonAsync<List<ElectricityPrice>>();
         Assert.NotNull(prices);
         Assert.NotEmpty(prices);
-        Assert.Equal(24, prices.Count);
+        // Should return at least 24 prices (today), may return 48 if after 3 PM Norwegian time (today + tomorrow)
+        Assert.True(prices.Count >= 24, $"Expected at least 24 prices, but got {prices.Count}");
     }
 
     [Fact]
