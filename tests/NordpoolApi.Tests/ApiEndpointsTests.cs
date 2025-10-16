@@ -368,4 +368,32 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
         // Verify all prices are for NO1
         Assert.All(prices, price => Assert.Equal("NO1", price.Area));
     }
+
+    [Fact]
+    public async Task GetPrices_DifferentZones_ReturnDifferentPrices()
+    {
+        // Act
+        var responseNO1 = await _client.GetAsync("/api/NO1/prices");
+        var responseNO2 = await _client.GetAsync("/api/NO2/prices");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, responseNO1.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, responseNO2.StatusCode);
+        
+        var pricesNO1 = await responseNO1.Content.ReadFromJsonAsync<List<ElectricityPrice>>();
+        var pricesNO2 = await responseNO2.Content.ReadFromJsonAsync<List<ElectricityPrice>>();
+        
+        Assert.NotNull(pricesNO1);
+        Assert.NotNull(pricesNO2);
+        Assert.NotEmpty(pricesNO1);
+        Assert.NotEmpty(pricesNO2);
+        
+        // Verify all prices are for the correct zones
+        Assert.All(pricesNO1, price => Assert.Equal("NO1", price.Area));
+        Assert.All(pricesNO2, price => Assert.Equal("NO2", price.Area));
+        
+        // Verify the prices are different (NO2 should be 0.005 kr/kWh higher based on test data: 5 NOK/MWh = 0.005 kr/kWh)
+        Assert.NotEqual(pricesNO1[0].Price, pricesNO2[0].Price);
+        Assert.Equal(pricesNO1[0].Price + 0.005m, pricesNO2[0].Price);
+    }
 }
