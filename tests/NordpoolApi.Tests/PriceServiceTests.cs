@@ -189,4 +189,58 @@ public class PriceServiceTests
         Assert.Single(result);
         Assert.Equal(0.5m, result.First().Price); // Should keep the first one
     }
+
+    [Fact]
+    public async Task GetCurrentPricesAsync_ReturnsPricesSortedByStartTimeAscending()
+    {
+        // Arrange
+        var baseTime = new DateTime(2025, 10, 16, 0, 0, 0, DateTimeKind.Utc);
+        var prices = new List<ElectricityPrice>
+        {
+            new ElectricityPrice
+            {
+                Start = baseTime.AddHours(3),
+                End = baseTime.AddHours(4),
+                Price = 0.7m,
+                SubsidizedPrice = 0.7m,
+                Currency = "NOK",
+                Area = "NO1"
+            },
+            new ElectricityPrice
+            {
+                Start = baseTime.AddHours(1),
+                End = baseTime.AddHours(2),
+                Price = 0.5m,
+                SubsidizedPrice = 0.5m,
+                Currency = "NOK",
+                Area = "NO1"
+            },
+            new ElectricityPrice
+            {
+                Start = baseTime.AddHours(2),
+                End = baseTime.AddHours(3),
+                Price = 0.6m,
+                SubsidizedPrice = 0.6m,
+                Currency = "NOK",
+                Area = "NO1"
+            }
+        };
+
+        // Act - Add prices in random order
+        _priceService.AddPrices(prices);
+        var result = await _priceService.GetCurrentPricesAsync();
+
+        // Assert - Verify prices are sorted by Start time
+        var sortedPrices = result.ToList();
+        Assert.Equal(3, sortedPrices.Count);
+        
+        Assert.Equal(baseTime.AddHours(1), sortedPrices[0].Start);
+        Assert.Equal(0.5m, sortedPrices[0].Price);
+        
+        Assert.Equal(baseTime.AddHours(2), sortedPrices[1].Start);
+        Assert.Equal(0.6m, sortedPrices[1].Price);
+        
+        Assert.Equal(baseTime.AddHours(3), sortedPrices[2].Start);
+        Assert.Equal(0.7m, sortedPrices[2].Price);
+    }
 }
