@@ -15,7 +15,7 @@ public class PriceService : IPriceService
 
     public Task<IEnumerable<ElectricityPrice>> GetCurrentPricesAsync()
     {
-        return Task.FromResult(_prices.Values.AsEnumerable());
+        return Task.FromResult(_prices.Values.OrderBy(p => p.Start).AsEnumerable());
     }
 
     public Task<ElectricityPrice?> GetCurrentPriceAsync()

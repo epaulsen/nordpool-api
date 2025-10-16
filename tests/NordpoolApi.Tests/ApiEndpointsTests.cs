@@ -45,6 +45,28 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetAllPrices_ReturnsSortedByStartTimeAscending()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/prices");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        var prices = await response.Content.ReadFromJsonAsync<List<ElectricityPrice>>();
+        Assert.NotNull(prices);
+        Assert.NotEmpty(prices);
+        
+        // Verify prices are sorted by Start time in ascending order
+        for (int i = 1; i < prices.Count; i++)
+        {
+            Assert.True(prices[i - 1].Start <= prices[i].Start, 
+                $"Prices should be sorted in ascending order by Start time. " +
+                $"Found {prices[i - 1].Start} at index {i - 1} followed by {prices[i].Start} at index {i}");
+        }
+    }
+
+    [Fact]
     public async Task GetCurrentPrice_ReturnsCurrentPrice()
     {
         // Act
