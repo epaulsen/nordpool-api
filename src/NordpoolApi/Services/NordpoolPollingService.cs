@@ -8,20 +8,24 @@ public class NordpoolPollingService : BackgroundService
     private readonly PriceService _priceService;
     private readonly INordpoolApiClient _apiClient;
     private readonly NordpoolDataParser _dataParser;
+    private readonly IScheduler _scheduler;
     private static readonly TimeZoneInfo NorwegianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Oslo");
     private const int DailyFetchHour = 15; // 3 PM
     private const int RetryDelayMinutes = 15;
+    private readonly List<IDisposable> _scheduledTasks = new();
 
     public NordpoolPollingService(
         ILogger<NordpoolPollingService> logger,
         PriceService priceService,
         INordpoolApiClient apiClient,
-        NordpoolDataParser dataParser)
+        NordpoolDataParser dataParser,
+        IScheduler scheduler)
     {
         _logger = logger;
         _priceService = priceService;
         _apiClient = apiClient;
         _dataParser = dataParser;
+        _scheduler = scheduler;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -38,52 +42,51 @@ public class NordpoolPollingService : BackgroundService
             _logger.LogError(ex, "Error occurred while fetching initial Nordpool prices");
         }
 
-        // Schedule periodic tasks
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            try
+        // Schedule periodic tasks using IScheduler
+        var now = GetNorwegianTime();
+        
+        // Schedule daily fetch at 3 PM
+        var next3PM = GetNext3PMTime(now);
+        var next3PMOffset = TimeZoneInfo.ConvertTimeToUtc(next3PM, NorwegianTimeZone);
+        _logger.LogInformation("Scheduling daily fetch at 3 PM (next: {FetchTime})", next3PM);
+        
+        var fetchTask = _scheduler.RunEvery(
+            new DateTimeOffset(next3PMOffset), 
+            TimeSpan.FromDays(1), 
+            async () => await FetchTomorrowPricesWithRetryAsync(stoppingToken));
+        _scheduledTasks.Add(fetchTask);
+        
+        // Schedule daily cleanup at midnight
+        var nextMidnight = GetNextMidnight(now);
+        var nextMidnightOffset = TimeZoneInfo.ConvertTimeToUtc(nextMidnight, NorwegianTimeZone);
+        _logger.LogInformation("Scheduling daily cleanup at midnight (next: {MidnightTime})", nextMidnight);
+        
+        var cleanupTask = _scheduler.RunEvery(
+            new DateTimeOffset(nextMidnightOffset),
+            TimeSpan.FromDays(1),
+            async () => 
             {
-                var now = GetNorwegianTime();
-                
-                // Check if we need to fetch tomorrow's prices (at 3 PM)
-                var nextFetchTime = GetNext3PMTime(now);
-                var timeUntilNextFetch = nextFetchTime - now;
-                
-                // Check if we need to clean old data (at midnight)
-                var nextMidnight = GetNextMidnight(now);
-                var timeUntilMidnight = nextMidnight - now;
-                
-                // Wait until the next event
-                var nextEventTime = timeUntilNextFetch < timeUntilMidnight ? timeUntilNextFetch : timeUntilMidnight;
-                
-                _logger.LogInformation("Next fetch at {FetchTime}, next cleanup at {MidnightTime}", 
-                    nextFetchTime, nextMidnight);
-                
-                if (nextEventTime > TimeSpan.Zero)
-                {
-                    await Task.Delay(nextEventTime, stoppingToken);
-                }
-                
-                now = GetNorwegianTime();
-                
-                // Check which task to execute
-                if (Math.Abs((now - nextFetchTime).TotalMinutes) < 1)
-                {
-                    await FetchTomorrowPricesWithRetryAsync(stoppingToken);
-                }
-                else if (Math.Abs((now - nextMidnight).TotalMinutes) < 1)
-                {
-                    CleanOldPrices();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred in polling loop");
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-            }
-        }
+                CleanOldPrices();
+                await Task.CompletedTask;
+            });
+        _scheduledTasks.Add(cleanupTask);
 
-        _logger.LogInformation("Nordpool polling service stopped");
+        // Wait for the service to be stopped
+        await Task.Delay(Timeout.Infinite, stoppingToken);
+    }
+
+    public override void Dispose()
+    {
+        _logger.LogInformation("Nordpool polling service stopping - disposing scheduled tasks");
+        
+        // Dispose all scheduled tasks to cancel them
+        foreach (var task in _scheduledTasks)
+        {
+            task.Dispose();
+        }
+        _scheduledTasks.Clear();
+        
+        base.Dispose();
     }
 
     private async Task FetchInitialPricesAsync(CancellationToken cancellationToken)
