@@ -1,4 +1,4 @@
-name: Build and Deploy to Azure Container Apps
+name: Build and Deploy to Azure Web App
 
 on:
   push:
@@ -8,9 +8,8 @@ on:
 
 env:
   AZURE_CONTAINER_REGISTRY: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
-  AZURE_CONTAINER_APP_NAME: ${{ secrets.AZURE_CONTAINER_APP_NAME }}
+  AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
   AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
-  AZURE_CONTAINER_ENVIRONMENT: ${{ secrets.AZURE_CONTAINER_ENVIRONMENT }}
   IMAGE_NAME: nordpool-api
 
 jobs:
@@ -45,12 +44,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Log in to Azure Container Registry
-      uses: docker/login-action@v3
+    - name: Azure Login
+      uses: azure/login@v2
       with:
-        registry: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
-        username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
-        password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: Log in to Azure Container Registry using Service Principal
+      run: |
+        ACR_NAME=$(echo "${{ secrets.AZURE_CONTAINER_REGISTRY }}" | cut -d'.' -f1)
+        az acr login --name $ACR_NAME
         
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
@@ -73,9 +75,8 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
         
-    - name: Deploy to Azure Container Apps
-      uses: azure/container-apps-deploy-action@v1
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v3
       with:
-        containerAppName: ${{ secrets.AZURE_CONTAINER_APP_NAME }}
-        resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
-        imageToDeploy: ${{ secrets.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+        images: ${{ secrets.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}

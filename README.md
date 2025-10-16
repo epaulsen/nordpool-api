@@ -11,7 +11,7 @@ A .NET minimal API web service that caches Nordpool data and provides current el
   - Cleans up old prices at midnight Norwegian time
 - 📊 REST API endpoints for fetching electricity prices
 - 🐳 Docker containerization support
-- ☁️ GitHub Actions workflow for automated deployment to Azure Container Apps
+- ☁️ GitHub Actions workflow for automated deployment to Azure Web App for Containers
 
 ## Endpoints
 
@@ -191,9 +191,11 @@ docker run -p 8080:8080 nordpool-api
 
 The application will be available at `http://localhost:8080`.
 
-## Deployment to Azure Container Apps
+## Deployment to Azure Web App for Containers
 
-This repository includes a GitHub Actions workflow for automatic deployment to Azure Container Apps.
+This repository includes a GitHub Actions workflow for automatic deployment to Azure Web App for Containers.
+
+See [AZURE_SETUP.md](AZURE_SETUP.md) for detailed setup instructions.
 
 ### Required GitHub Secrets
 
@@ -211,52 +213,44 @@ Before the workflow can run successfully, you need to configure the following se
 
 2. **`AZURE_CONTAINER_REGISTRY`** - Azure Container Registry name (e.g., `myregistry.azurecr.io`)
 
-3. **`AZURE_REGISTRY_USERNAME`** - Azure Container Registry username
+3. **`AZURE_WEBAPP_NAME`** - Name of your Azure Web App
 
-4. **`AZURE_REGISTRY_PASSWORD`** - Azure Container Registry password
+4. **`AZURE_RESOURCE_GROUP`** - Azure resource group name
 
-5. **`AZURE_CONTAINER_APP_NAME`** - Name of your Azure Container App
+### Quick Setup
 
-6. **`AZURE_RESOURCE_GROUP`** - Azure resource group name
+You can use the provided Bicep template to quickly set up all required Azure resources:
 
-7. **`AZURE_CONTAINER_ENVIRONMENT`** - Azure Container Apps environment name
-
-### Setting up Azure Resources
-
-#### 1. Create an Azure Container Registry
 ```bash
-az acr create --resource-group <resource-group> \
-  --name <registry-name> --sku Basic
-```
+# Set variables
+RESOURCE_GROUP="nordpool-api-rg"
+LOCATION="northeurope"
+ACR_NAME="nordpoolacr"  # must be globally unique
+WEBAPP_NAME="nordpool-api"
 
-#### 2. Create an Azure Container Apps Environment
-```bash
-az containerapp env create \
-  --name <environment-name> \
-  --resource-group <resource-group> \
-  --location <location>
-```
+# Create resource group
+az group create --name $RESOURCE_GROUP --location $LOCATION
 
-#### 3. Create the Container App
-```bash
-az containerapp create \
-  --name <app-name> \
-  --resource-group <resource-group> \
-  --environment <environment-name> \
-  --image mcr.microsoft.com/dotnet/samples:aspnetapp \
-  --target-port 8080 \
-  --ingress external
-```
-
-#### 4. Create a Service Principal
-```bash
-az ad sp create-for-rbac --name "nordpool-api-deploy" \
+# Create service principal
+SP_OUTPUT=$(az ad sp create-for-rbac \
+  --name "nordpool-api-github-deploy" \
   --role contributor \
-  --scopes /subscriptions/<subscription-id>/resourceGroups/<resource-group> \
-  --sdk-auth
-```
+  --scopes /subscriptions/$(az account show --query id -o tsv)/resourceGroups/$RESOURCE_GROUP \
+  --sdk-auth)
 
-Copy the output and use it for the `AZURE_CREDENTIALS` secret.
+# Get service principal object ID
+SP_OBJECT_ID=$(az ad sp list --display-name "nordpool-api-github-deploy" --query "[0].id" -o tsv)
+
+# Deploy infrastructure
+az deployment group create \
+  --resource-group $RESOURCE_GROUP \
+  --template-file infrastructure.bicep \
+  --parameters \
+    acrName=$ACR_NAME \
+    webAppName=$WEBAPP_NAME \
+    servicePrincipalObjectId=$SP_OBJECT_ID \
+    location=$LOCATION
+```
 
 ### Triggering Deployment
 
@@ -321,7 +315,8 @@ The parser expects JSON data in the Nordpool API format:
 nordpool-api/
 ├── .github/
 │   └── workflows/
-│       └── azure-container-apps.yml    # GitHub Actions deployment workflow
+│       ├── azure-webapp.yml            # GitHub Actions deployment workflow
+│       └── ci.yml                       # CI pipeline for pull requests
 ├── src/
 │   └── NordpoolApi/
 │       ├── Models/
@@ -343,7 +338,9 @@ nordpool-api/
 │       ├── NordpoolDataParserTests.cs  # Parser tests
 │       └── testdata/
 │           └── sampledata.json         # Sample Nordpool data
+├── infrastructure.bicep                 # Bicep template for Azure resources
 ├── Dockerfile                           # Docker build instructions
+├── AZURE_SETUP.md                       # Azure deployment setup guide
 └── README.md                            # This file
 ```
 
