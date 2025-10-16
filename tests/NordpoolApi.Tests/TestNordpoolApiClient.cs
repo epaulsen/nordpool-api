@@ -15,7 +15,7 @@ public class TestNordpoolApiClient : INordpoolApiClient
         var entries = new List<string>();
         var startDate = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         
-        // Generate 15-minute interval data (96 intervals per day = 24 hours * 4 quarters) for one area (NO1)
+        // Generate 15-minute interval data (96 intervals per day = 24 hours * 4 quarters) for multiple areas
         for (int hour = 0; hour < 24; hour++)
         {
             for (int quarter = 0; quarter < 4; quarter++)
@@ -31,7 +31,11 @@ public class TestNordpoolApiClient : INordpoolApiClient
                     ""deliveryStart"": ""{deliveryStart:yyyy-MM-ddTHH:mm:ssZ}"",
                     ""deliveryEnd"": ""{deliveryEnd:yyyy-MM-ddTHH:mm:ssZ}"",
                     ""entryPerArea"": {{
-                        ""NO1"": {basePrice + quarterAdjustment}
+                        ""NO1"": {basePrice + quarterAdjustment},
+                        ""NO2"": {basePrice + quarterAdjustment + 5},
+                        ""NO3"": {basePrice + quarterAdjustment + 10},
+                        ""NO4"": {basePrice + quarterAdjustment + 15},
+                        ""NO5"": {basePrice + quarterAdjustment + 20}
                     }}
                 }}";
                 

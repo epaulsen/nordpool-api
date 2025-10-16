@@ -32,7 +32,7 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetAllPrices_ReturnsListOfPrices()
     {
         // Act
-        var response = await _client.GetAsync("/api/prices");
+        var response = await _client.GetAsync("/api/NO1/prices");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -48,7 +48,7 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetAllPrices_ReturnsSortedByStartTimeAscending()
     {
         // Act
-        var response = await _client.GetAsync("/api/prices");
+        var response = await _client.GetAsync("/api/NO1/prices");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -136,7 +136,7 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetAllPrices_ReturnsHourlyAveragesWithQuarterlyPrices()
     {
         // Act
-        var response = await _client.GetAsync("/api/prices");
+        var response = await _client.GetAsync("/api/NO1/prices");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -208,7 +208,7 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetAllPrices_IncludesSubsidizedPrice()
     {
         // Act
-        var response = await _client.GetAsync("/api/prices");
+        var response = await _client.GetAsync("/api/NO1/prices");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -273,7 +273,7 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetAllPricesSorted_ReturnsAllPricesInAscendingOrder()
     {
         // Act
-        var response = await _client.GetAsync("/api/prices/all");
+        var response = await _client.GetAsync("/api/NO1/all");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -298,8 +298,8 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetAllPricesSorted_ReturnsAllPricesFromDictionary()
     {
         // Act
-        var responseAll = await _client.GetAsync("/api/prices/all");
-        var responseCurrent = await _client.GetAsync("/api/prices");
+        var responseAll = await _client.GetAsync("/api/NO1/all");
+        var responseCurrent = await _client.GetAsync("/api/NO1/prices");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, responseAll.StatusCode);
@@ -313,5 +313,87 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
         
         // Both endpoints should return the same number of prices (all prices in the dictionary)
         Assert.Equal(currentPrices.Count, allPricesSorted.Count);
+    }
+
+    [Fact]
+    public async Task GetPrices_WithInvalidZone_ReturnsNotFound()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/NO99/prices");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetAllPricesSorted_WithInvalidZone_ReturnsNotFound()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/NO99/all");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetPrices_WithValidZone_ReturnsOnlyPricesForThatZone()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/NO1/prices");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        var prices = await response.Content.ReadFromJsonAsync<List<ElectricityPrice>>();
+        Assert.NotNull(prices);
+        Assert.NotEmpty(prices);
+        
+        // Verify all prices are for NO1
+        Assert.All(prices, price => Assert.Equal("NO1", price.Area));
+    }
+
+    [Fact]
+    public async Task GetAllPricesSorted_WithValidZone_ReturnsOnlyPricesForThatZone()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/NO1/all");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        var prices = await response.Content.ReadFromJsonAsync<List<ElectricityPrice>>();
+        Assert.NotNull(prices);
+        Assert.NotEmpty(prices);
+        
+        // Verify all prices are for NO1
+        Assert.All(prices, price => Assert.Equal("NO1", price.Area));
+    }
+
+    [Fact]
+    public async Task GetPrices_DifferentZones_ReturnDifferentPrices()
+    {
+        // Act
+        var responseNO1 = await _client.GetAsync("/api/NO1/prices");
+        var responseNO2 = await _client.GetAsync("/api/NO2/prices");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, responseNO1.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, responseNO2.StatusCode);
+        
+        var pricesNO1 = await responseNO1.Content.ReadFromJsonAsync<List<ElectricityPrice>>();
+        var pricesNO2 = await responseNO2.Content.ReadFromJsonAsync<List<ElectricityPrice>>();
+        
+        Assert.NotNull(pricesNO1);
+        Assert.NotNull(pricesNO2);
+        Assert.NotEmpty(pricesNO1);
+        Assert.NotEmpty(pricesNO2);
+        
+        // Verify all prices are for the correct zones
+        Assert.All(pricesNO1, price => Assert.Equal("NO1", price.Area));
+        Assert.All(pricesNO2, price => Assert.Equal("NO2", price.Area));
+        
+        // Verify the prices are different (NO2 should be 0.005 kr/kWh higher based on test data: 5 NOK/MWh = 0.005 kr/kWh)
+        Assert.NotEqual(pricesNO1[0].Price, pricesNO2[0].Price);
+        Assert.Equal(pricesNO1[0].Price + 0.005m, pricesNO2[0].Price);
     }
 }
