@@ -10,6 +10,7 @@ builder.Services.AddHttpClient<INordpoolApiClient, NordpoolApiClient>();
 builder.Services.AddSingleton<NordpoolDataParser>();
 builder.Services.AddSingleton<PriceService>();
 builder.Services.AddSingleton<IPriceService>(sp => sp.GetRequiredService<PriceService>());
+builder.Services.AddSingleton<IScheduler, Scheduler>();
 builder.Services.AddHostedService<NordpoolPollingService>();
 
 var app = builder.Build();
