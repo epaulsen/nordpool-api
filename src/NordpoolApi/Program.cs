@@ -48,3 +48,6 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = Dat
     .WithDescription("Health check endpoint");
 
 app.Run();
+
+// Make the implicit Program class public for tests
+public partial class Program { }
