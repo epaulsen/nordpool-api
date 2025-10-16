@@ -4,6 +4,8 @@ namespace NordpoolApi.Tests;
 
 public class TestNordpoolApiClient : INordpoolApiClient
 {
+    private static readonly TimeZoneInfo NorwegianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Oslo");
+
     public Task<string?> FetchPriceDataAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
         // Generate mock data for today's date
@@ -13,7 +15,11 @@ public class TestNordpoolApiClient : INordpoolApiClient
     private string GenerateMockJsonData(DateOnly date)
     {
         var entries = new List<string>();
-        var startDate = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        
+        // Create midnight Norwegian time for the given date, then convert to UTC
+        // This ensures the test data starts at midnight Norwegian time (as Nordpool does)
+        var midnightNorwegian = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Unspecified);
+        var startDate = TimeZoneInfo.ConvertTimeToUtc(midnightNorwegian, NorwegianTimeZone);
         
         // Generate 15-minute interval data (96 intervals per day = 24 hours * 4 quarters) for multiple areas
         for (int hour = 0; hour < 24; hour++)
