@@ -25,8 +25,8 @@ public class NordpoolDataParserTests
         // Assert
         Assert.NotEmpty(prices);
         
-        // The sample data has 96 entries (15-minute intervals for 24 hours) and 5 areas = 480 prices
-        Assert.Equal(480, prices.Count);
+        // The sample data has 24 hours and 5 areas = 120 hourly averages
+        Assert.Equal(120, prices.Count);
     }
 
     [Fact]
@@ -39,9 +39,9 @@ public class NordpoolDataParserTests
         // Act
         var prices = _parser.ParsePrices(jsonData).ToList();
 
-        // Assert - First entry in sample data has NO1 = 726.47 MWh
+        // Assert - First hour in sample data has NO1 average of (726.47 + 723.89 + 721.66 + 719.55) / 4 = 722.8925 MWh
         var firstNo1Price = prices.First(p => p.Area == "NO1");
-        Assert.Equal(0.72647m, firstNo1Price.Price); // 726.47 / 1000 = 0.72647
+        Assert.Equal(0.7228925m, firstNo1Price.Price); // 722.8925 / 1000 = 0.7228925
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class NordpoolDataParserTests
         // Assert
         var firstPrice = prices.First();
         Assert.Equal(new DateTime(2025, 10, 16, 22, 0, 0, DateTimeKind.Utc), firstPrice.Start);
-        Assert.Equal(new DateTime(2025, 10, 16, 22, 15, 0, DateTimeKind.Utc), firstPrice.End);
+        Assert.Equal(new DateTime(2025, 10, 16, 23, 0, 0, DateTimeKind.Utc), firstPrice.End);
     }
 
     [Fact]
@@ -122,5 +122,50 @@ public class NordpoolDataParserTests
 
         // Assert
         Assert.Empty(prices);
+    }
+
+    [Fact]
+    public void ParsePrices_IncludesQuarterlyPrices()
+    {
+        // Arrange
+        var testDataPath = Path.Combine("testdata", "sampledata.json");
+        var jsonData = File.ReadAllText(testDataPath);
+
+        // Act
+        var prices = _parser.ParsePrices(jsonData).ToList();
+
+        // Assert
+        var firstPrice = prices.First();
+        Assert.NotNull(firstPrice.QuarterlyPrices);
+        Assert.Equal(4, firstPrice.QuarterlyPrices.Count); // 4 quarterly prices per hour
+        
+        // Verify the quarterly prices are in correct order
+        var quarterlyPrices = firstPrice.QuarterlyPrices.ToList();
+        Assert.Equal(new DateTime(2025, 10, 16, 22, 0, 0, DateTimeKind.Utc), quarterlyPrices[0].Start);
+        Assert.Equal(new DateTime(2025, 10, 16, 22, 15, 0, DateTimeKind.Utc), quarterlyPrices[0].End);
+        Assert.Equal(new DateTime(2025, 10, 16, 22, 15, 0, DateTimeKind.Utc), quarterlyPrices[1].Start);
+        Assert.Equal(new DateTime(2025, 10, 16, 22, 30, 0, DateTimeKind.Utc), quarterlyPrices[1].End);
+        Assert.Equal(new DateTime(2025, 10, 16, 22, 30, 0, DateTimeKind.Utc), quarterlyPrices[2].Start);
+        Assert.Equal(new DateTime(2025, 10, 16, 22, 45, 0, DateTimeKind.Utc), quarterlyPrices[2].End);
+        Assert.Equal(new DateTime(2025, 10, 16, 22, 45, 0, DateTimeKind.Utc), quarterlyPrices[3].Start);
+        Assert.Equal(new DateTime(2025, 10, 16, 23, 0, 0, DateTimeKind.Utc), quarterlyPrices[3].End);
+    }
+
+    [Fact]
+    public void ParsePrices_HourlyPriceIsAverageOfQuarterlyPrices()
+    {
+        // Arrange
+        var testDataPath = Path.Combine("testdata", "sampledata.json");
+        var jsonData = File.ReadAllText(testDataPath);
+
+        // Act
+        var prices = _parser.ParsePrices(jsonData).ToList();
+
+        // Assert
+        var firstPrice = prices.First();
+        Assert.NotNull(firstPrice.QuarterlyPrices);
+        
+        var quarterlyAverage = firstPrice.QuarterlyPrices.Average(q => q.Price);
+        Assert.Equal(firstPrice.Price, quarterlyAverage);
     }
 }

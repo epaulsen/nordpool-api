@@ -109,4 +109,76 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(priceWithoutVAT.Currency, priceWithVAT.Currency);
         Assert.Equal(priceWithoutVAT.Area, priceWithVAT.Area);
     }
+
+    [Fact]
+    public async Task GetAllPrices_ReturnsHourlyAveragesWithQuarterlyPrices()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/prices");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        var prices = await response.Content.ReadFromJsonAsync<List<ElectricityPrice>>();
+        Assert.NotNull(prices);
+        Assert.NotEmpty(prices);
+        
+        // Check that the first price has quarterly prices
+        var firstPrice = prices.First();
+        Assert.NotNull(firstPrice.QuarterlyPrices);
+        Assert.Equal(4, firstPrice.QuarterlyPrices.Count);
+        
+        // Verify the price is the average of quarterly prices
+        var expectedAverage = firstPrice.QuarterlyPrices.Average(q => q.Price);
+        Assert.Equal(expectedAverage, firstPrice.Price);
+        
+        // Verify the time span is exactly one hour
+        var hourSpan = firstPrice.End - firstPrice.Start;
+        Assert.Equal(1, hourSpan.TotalHours);
+        
+        // Verify quarterly prices cover the entire hour in 15-minute intervals
+        var quarterlyPrices = firstPrice.QuarterlyPrices.OrderBy(q => q.Start).ToList();
+        for (int i = 0; i < 4; i++)
+        {
+            var quarterSpan = quarterlyPrices[i].End - quarterlyPrices[i].Start;
+            Assert.Equal(15, quarterSpan.TotalMinutes);
+            
+            // Verify continuity
+            if (i > 0)
+            {
+                Assert.Equal(quarterlyPrices[i - 1].End, quarterlyPrices[i].Start);
+            }
+        }
+        
+        // Verify first quarter starts at hour start
+        Assert.Equal(firstPrice.Start, quarterlyPrices[0].Start);
+        
+        // Verify last quarter ends at hour end
+        Assert.Equal(firstPrice.End, quarterlyPrices[3].End);
+    }
+
+    [Fact]
+    public async Task GetCurrentPrice_ReturnsHourlyAverageWithQuarterlyPrices()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/prices/current");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        var price = await response.Content.ReadFromJsonAsync<ElectricityPrice>();
+        Assert.NotNull(price);
+        
+        // Check that the price has quarterly prices
+        Assert.NotNull(price.QuarterlyPrices);
+        Assert.Equal(4, price.QuarterlyPrices.Count);
+        
+        // Verify the price is the average of quarterly prices
+        var expectedAverage = price.QuarterlyPrices.Average(q => q.Price);
+        Assert.Equal(expectedAverage, price.Price);
+        
+        // Verify the time span is exactly one hour
+        var hourSpan = price.End - price.Start;
+        Assert.Equal(1, hourSpan.TotalHours);
+    }
 }
