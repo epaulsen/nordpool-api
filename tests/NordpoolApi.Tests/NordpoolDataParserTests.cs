@@ -168,4 +168,128 @@ public class NordpoolDataParserTests
         var quarterlyAverage = firstPrice.QuarterlyPrices.Average(q => q.Price);
         Assert.Equal(firstPrice.Price, quarterlyAverage);
     }
+
+    [Fact]
+    public void ParsePrices_CalculatesSubsidizedPrice_WhenPriceAboveThreshold()
+    {
+        // Arrange - Create JSON with price above 0.75 kr (1.0 kr)
+        var jsonData = @"{
+            ""deliveryDateCET"": ""2025-10-17"",
+            ""currency"": ""NOK"",
+            ""multiAreaEntries"": [
+                {
+                    ""deliveryStart"": ""2025-10-16T22:00:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T22:15:00Z"",
+                    ""entryPerArea"": { ""NO1"": 1000.0 }
+                },
+                {
+                    ""deliveryStart"": ""2025-10-16T22:15:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T22:30:00Z"",
+                    ""entryPerArea"": { ""NO1"": 1000.0 }
+                },
+                {
+                    ""deliveryStart"": ""2025-10-16T22:30:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T22:45:00Z"",
+                    ""entryPerArea"": { ""NO1"": 1000.0 }
+                },
+                {
+                    ""deliveryStart"": ""2025-10-16T22:45:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T23:00:00Z"",
+                    ""entryPerArea"": { ""NO1"": 1000.0 }
+                }
+            ]
+        }";
+
+        // Act
+        var prices = _parser.ParsePrices(jsonData).ToList();
+
+        // Assert
+        Assert.Single(prices);
+        var price = prices.First();
+        Assert.Equal(1.0m, price.Price); // 1000 / 1000 = 1.0 kr
+        // SubsidizedPrice = 0.75 + 0.1 * (1.0 - 0.75) = 0.75 + 0.025 = 0.775
+        Assert.Equal(0.775m, price.SubsidizedPrice);
+    }
+
+    [Fact]
+    public void ParsePrices_CalculatesSubsidizedPrice_WhenPriceBelowThreshold()
+    {
+        // Arrange - Create JSON with price below 0.75 kr (0.5 kr)
+        var jsonData = @"{
+            ""deliveryDateCET"": ""2025-10-17"",
+            ""currency"": ""NOK"",
+            ""multiAreaEntries"": [
+                {
+                    ""deliveryStart"": ""2025-10-16T22:00:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T22:15:00Z"",
+                    ""entryPerArea"": { ""NO1"": 500.0 }
+                },
+                {
+                    ""deliveryStart"": ""2025-10-16T22:15:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T22:30:00Z"",
+                    ""entryPerArea"": { ""NO1"": 500.0 }
+                },
+                {
+                    ""deliveryStart"": ""2025-10-16T22:30:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T22:45:00Z"",
+                    ""entryPerArea"": { ""NO1"": 500.0 }
+                },
+                {
+                    ""deliveryStart"": ""2025-10-16T22:45:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T23:00:00Z"",
+                    ""entryPerArea"": { ""NO1"": 500.0 }
+                }
+            ]
+        }";
+
+        // Act
+        var prices = _parser.ParsePrices(jsonData).ToList();
+
+        // Assert
+        Assert.Single(prices);
+        var price = prices.First();
+        Assert.Equal(0.5m, price.Price); // 500 / 1000 = 0.5 kr
+        Assert.Equal(0.5m, price.SubsidizedPrice); // Below threshold, so same as price
+    }
+
+    [Fact]
+    public void ParsePrices_CalculatesSubsidizedPrice_WhenPriceExactlyAtThreshold()
+    {
+        // Arrange - Create JSON with price exactly at 0.75 kr
+        var jsonData = @"{
+            ""deliveryDateCET"": ""2025-10-17"",
+            ""currency"": ""NOK"",
+            ""multiAreaEntries"": [
+                {
+                    ""deliveryStart"": ""2025-10-16T22:00:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T22:15:00Z"",
+                    ""entryPerArea"": { ""NO1"": 750.0 }
+                },
+                {
+                    ""deliveryStart"": ""2025-10-16T22:15:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T22:30:00Z"",
+                    ""entryPerArea"": { ""NO1"": 750.0 }
+                },
+                {
+                    ""deliveryStart"": ""2025-10-16T22:30:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T22:45:00Z"",
+                    ""entryPerArea"": { ""NO1"": 750.0 }
+                },
+                {
+                    ""deliveryStart"": ""2025-10-16T22:45:00Z"",
+                    ""deliveryEnd"": ""2025-10-16T23:00:00Z"",
+                    ""entryPerArea"": { ""NO1"": 750.0 }
+                }
+            ]
+        }";
+
+        // Act
+        var prices = _parser.ParsePrices(jsonData).ToList();
+
+        // Assert
+        Assert.Single(prices);
+        var price = prices.First();
+        Assert.Equal(0.75m, price.Price); // 750 / 1000 = 0.75 kr
+        Assert.Equal(0.75m, price.SubsidizedPrice); // At threshold, so same as price
+    }
 }

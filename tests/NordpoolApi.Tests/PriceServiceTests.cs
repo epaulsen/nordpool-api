@@ -27,6 +27,7 @@ public class PriceServiceTests
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddHours(1),
                 Price = 0.5m,
+                SubsidizedPrice = 0.5m,
                 Currency = "NOK",
                 Area = "NO1"
             }
@@ -52,6 +53,7 @@ public class PriceServiceTests
                 Start = now.AddHours(-2),
                 End = now.AddHours(-1),
                 Price = 0.5m,
+                SubsidizedPrice = 0.5m,
                 Currency = "NOK",
                 Area = "NO1"
             },
@@ -60,6 +62,7 @@ public class PriceServiceTests
                 Start = now,
                 End = now.AddHours(1),
                 Price = 0.6m,
+                SubsidizedPrice = 0.6m,
                 Currency = "NOK",
                 Area = "NO1"
             }
@@ -87,6 +90,7 @@ public class PriceServiceTests
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddHours(1),
                 Price = 0.5m,
+                SubsidizedPrice = 0.5m,
                 Currency = "NOK",
                 Area = "NO1"
             }
@@ -99,6 +103,7 @@ public class PriceServiceTests
                 Start = DateTime.UtcNow.AddHours(1),
                 End = DateTime.UtcNow.AddHours(2),
                 Price = 0.7m,
+                SubsidizedPrice = 0.7m,
                 Currency = "NOK",
                 Area = "NO1"
             }
@@ -127,6 +132,7 @@ public class PriceServiceTests
                 Start = now.AddMinutes(-30),
                 End = now.AddMinutes(30),
                 Price = 0.5m,
+                SubsidizedPrice = 0.5m,
                 Currency = "NOK",
                 Area = "NO1"
             }
@@ -154,6 +160,7 @@ public class PriceServiceTests
                 Start = now,
                 End = now.AddHours(1),
                 Price = 0.5m,
+                SubsidizedPrice = 0.5m,
                 Currency = "NOK",
                 Area = "NO1"
             }
@@ -166,6 +173,7 @@ public class PriceServiceTests
                 Start = now,
                 End = now.AddHours(1),
                 Price = 0.6m,
+                SubsidizedPrice = 0.6m,
                 Currency = "NOK",
                 Area = "NO1"
             }
