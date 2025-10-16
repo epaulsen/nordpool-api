@@ -45,7 +45,7 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task GetCurrentPrice_ReturnsCurrentPrice()
+    public async Task GetCurrentPrice_ReturnsCurrentPriceValue()
     {
         // Act
         var response = await _client.GetAsync("/api/prices/current");
@@ -53,15 +53,41 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         
-        var price = await response.Content.ReadFromJsonAsync<ElectricityPrice>();
-        Assert.NotNull(price);
-        Assert.True(price.Price > 0);
-        Assert.Equal("NOK", price.Currency);
-        Assert.Equal("NO1", price.Area);
+        var priceValue = await response.Content.ReadFromJsonAsync<decimal>();
+        Assert.True(priceValue > 0);
+    }
+
+    [Fact]
+    public async Task GetCurrentPrice_WithIncludeVATFalse_ReturnsOriginalPrice()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/prices/current?includeVAT=false");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         
-        // Verify the price is for the current hour
-        var now = DateTime.UtcNow;
-        Assert.True(price.Start <= now);
-        Assert.True(price.End > now);
+        var priceValue = await response.Content.ReadFromJsonAsync<decimal>();
+        Assert.True(priceValue > 0);
+    }
+
+    [Fact]
+    public async Task GetCurrentPrice_WithIncludeVATTrue_ReturnsPriceWithVAT()
+    {
+        // Arrange - Get the price without VAT first
+        var responseWithoutVAT = await _client.GetAsync("/api/prices/current?includeVAT=false");
+        var priceWithoutVAT = await responseWithoutVAT.Content.ReadFromJsonAsync<decimal>();
+        
+        // Act - Get the price with VAT
+        var responseWithVAT = await _client.GetAsync("/api/prices/current?includeVAT=true");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, responseWithVAT.StatusCode);
+        
+        var priceWithVAT = await responseWithVAT.Content.ReadFromJsonAsync<decimal>();
+        Assert.True(priceWithVAT > 0);
+        
+        // Verify the price with VAT is 1.25 times the price without VAT
+        var expectedPriceWithVAT = priceWithoutVAT * 1.25m;
+        Assert.Equal(expectedPriceWithVAT, priceWithVAT);
     }
 }

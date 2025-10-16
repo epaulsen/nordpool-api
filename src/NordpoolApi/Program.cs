@@ -32,7 +32,7 @@ app.MapGet("/api/prices", async (IPriceService priceService) =>
 .WithName("GetElectricityPrices")
 .WithDescription("Get all electricity prices for today");
 
-app.MapGet("/api/prices/current", async (IPriceService priceService) =>
+app.MapGet("/api/prices/current", async (IPriceService priceService, bool includeVAT = false) =>
 {
     var currentPrice = await priceService.GetCurrentPriceAsync();
     
@@ -41,10 +41,16 @@ app.MapGet("/api/prices/current", async (IPriceService priceService) =>
         return Results.NotFound(new { message = "No price data available for the current time" });
     }
     
-    return Results.Ok(currentPrice);
+    var priceValue = currentPrice.Price;
+    if (includeVAT)
+    {
+        priceValue *= 1.25m;
+    }
+    
+    return Results.Ok(priceValue);
 })
 .WithName("GetCurrentElectricityPrice")
-.WithDescription("Get the current electricity price");
+.WithDescription("Get the current electricity price value. Use includeVAT=true to include 25% VAT.");
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
     .WithName("HealthCheck")

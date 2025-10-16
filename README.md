@@ -17,19 +17,26 @@ A .NET minimal API web service that caches Nordpool data and provides current el
 
 ### Get Current Electricity Price
 ```
-GET /api/prices/current
+GET /api/prices/current?includeVAT=false
 ```
-Returns the current electricity price for the current hour.
+Returns the current electricity price value for the current hour.
+
+**Query Parameters:**
+- `includeVAT` (optional, default: `false`): When set to `true`, returns the price multiplied by 1.25 to include 25% VAT.
 
 **Response:**
 ```json
-{
-  "start": "2025-10-16T15:00:00Z",
-  "end": "2025-10-16T16:00:00Z",
-  "price": 1.7084,
-  "currency": "NOK",
-  "area": "NO1"
-}
+1.7084
+```
+
+**Example with VAT:**
+```
+GET /api/prices/current?includeVAT=true
+```
+
+**Response:**
+```json
+2.1355
 ```
 
 ### Get All Prices
