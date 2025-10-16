@@ -15,21 +15,28 @@ public class TestNordpoolApiClient : INordpoolApiClient
         var entries = new List<string>();
         var startDate = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         
-        // Generate hourly data (24 hours) for one area (NO1) to match test expectations
+        // Generate 15-minute interval data (96 intervals per day = 24 hours * 4 quarters) for one area (NO1)
         for (int hour = 0; hour < 24; hour++)
         {
-            var deliveryStart = startDate.AddHours(hour);
-            var deliveryEnd = deliveryStart.AddHours(1);
-            
-            var entry = $@"{{
-                ""deliveryStart"": ""{deliveryStart:yyyy-MM-ddTHH:mm:ssZ}"",
-                ""deliveryEnd"": ""{deliveryEnd:yyyy-MM-ddTHH:mm:ssZ}"",
-                ""entryPerArea"": {{
-                    ""NO1"": {100.0 + hour * 10}
-                }}
-            }}";
-            
-            entries.Add(entry);
+            for (int quarter = 0; quarter < 4; quarter++)
+            {
+                var deliveryStart = startDate.AddHours(hour).AddMinutes(quarter * 15);
+                var deliveryEnd = deliveryStart.AddMinutes(15);
+                
+                // Generate varying prices within each hour to simulate real data
+                var basePrice = 100.0 + hour * 10;
+                var quarterAdjustment = quarter * 0.5; // Small variation within the hour
+                
+                var entry = $@"{{
+                    ""deliveryStart"": ""{deliveryStart:yyyy-MM-ddTHH:mm:ssZ}"",
+                    ""deliveryEnd"": ""{deliveryEnd:yyyy-MM-ddTHH:mm:ssZ}"",
+                    ""entryPerArea"": {{
+                        ""NO1"": {basePrice + quarterAdjustment}
+                    }}
+                }}";
+                
+                entries.Add(entry);
+            }
         }
         
         return $@"{{
