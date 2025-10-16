@@ -174,6 +174,55 @@ The workflow is triggered:
 - Automatically on push to the `main` branch
 - Manually via the "Actions" tab using "Run workflow"
 
+## Data Parser
+
+The `NordpoolDataParser` service parses Nordpool JSON data and extracts electricity prices from the `multiAreaEntries` section. The parser automatically converts prices from MWh to kWh.
+
+### Usage Example
+
+```csharp
+using NordpoolApi.Services;
+
+var parser = new NordpoolDataParser();
+var jsonData = File.ReadAllText("nordpool-data.json");
+var prices = parser.ParsePrices(jsonData);
+
+foreach (var price in prices)
+{
+    Console.WriteLine($"{price.Area}: {price.Price} {price.Currency}/kWh at {price.Start}");
+}
+```
+
+### Input Data Format
+
+The parser expects JSON data in the Nordpool API format:
+
+```json
+{
+  "deliveryDateCET": "2025-10-17",
+  "currency": "NOK",
+  "multiAreaEntries": [
+    {
+      "deliveryStart": "2025-10-16T22:00:00Z",
+      "deliveryEnd": "2025-10-16T22:15:00Z",
+      "entryPerArea": {
+        "NO1": 726.47,
+        "NO2": 806.87,
+        "NO3": 328.03
+      }
+    }
+  ]
+}
+```
+
+### Features
+
+- ✅ Parses `multiAreaEntries` from Nordpool JSON data
+- ✅ Converts prices from MWh to kWh (divides by 1000)
+- ✅ Extracts prices for all delivery areas (NO1, NO2, NO3, NO4, NO5, etc.)
+- ✅ Preserves time information (delivery start and end)
+- ✅ Returns strongly-typed `ElectricityPrice` objects
+
 ## Project Structure
 
 ```
@@ -184,14 +233,22 @@ nordpool-api/
 ├── src/
 │   └── NordpoolApi/
 │       ├── Models/
-│       │   └── ElectricityPrice.cs     # Price data model
+│       │   ├── ElectricityPrice.cs     # Price data model
+│       │   └── NordpoolData.cs         # Nordpool JSON data model
 │       ├── Services/
 │       │   ├── IPriceService.cs        # Price service interface
 │       │   ├── PriceService.cs         # Price service implementation
-│       │   └── NordpoolPollingService.cs # Background polling service
+│       │   ├── NordpoolPollingService.cs # Background polling service
+│       │   └── NordpoolDataParser.cs   # Nordpool data parser
 │       ├── Program.cs                   # Application entry point & API endpoints
 │       ├── appsettings.json            # Application configuration
 │       └── NordpoolApi.csproj          # Project file
+├── tests/
+│   └── NordpoolApi.Tests/
+│       ├── ApiEndpointsTests.cs        # API endpoint tests
+│       ├── NordpoolDataParserTests.cs  # Parser tests
+│       └── testdata/
+│           └── sampledata.json         # Sample Nordpool data
 ├── Dockerfile                           # Docker build instructions
 └── README.md                            # This file
 ```
@@ -202,16 +259,15 @@ nordpool-api/
 - The polling service currently generates **mock data** for demonstration purposes
 - The service polls at a configurable interval (default: 60 minutes)
 - Prices are cached in memory using a thread-safe `ConcurrentBag`
+- ✅ **Data parser** is implemented and can parse Nordpool JSON data with automatic MWh to kWh conversion
 
 ### TODO
-- Replace mock data with actual Nordpool API integration
-- Add support for multiple price areas (currently hardcoded to NO1)
+- Replace mock data with actual Nordpool API integration (parser is ready to use)
 - Add support for multiple currencies
 - Add price history and forecasting
 - Add caching layer (Redis/Azure Cache)
 - Add authentication/authorization if needed
 - Add rate limiting
-- Add comprehensive unit and integration tests
 
 ## License
 
