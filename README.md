@@ -10,16 +10,32 @@ A .NET minimal API web service that caches Nordpool data and provides current el
   - Automatically retries on HTTP 204 (data not available yet)
   - Cleans up old prices at midnight Norwegian time
 - 📊 REST API endpoints for fetching electricity prices
+- 📖 OpenAPI specification (OpenAPI 3.0.1) available at `/openapi/v1.json`
 - 🐳 Docker containerization support
 - ☁️ GitHub Actions workflow for automated deployment to Azure Web App for Containers
 
 ## Endpoints
 
+### OpenAPI Specification
+```
+GET /openapi/v1.json
+```
+Returns the OpenAPI 3.0.1 specification for all API endpoints. This specification can be used with tools like Swagger UI, Postman, or any OpenAPI-compatible client.
+
+**Features:**
+- Complete API documentation with request/response schemas
+- Model definitions for `ElectricityPrice` and `QuarterlyPrice`
+- Parameter descriptions and constraints
+- Response status codes and content types
+
 ### Get Current Electricity Price
 ```
-GET /api/prices/current?includeVAT=false
+GET /api/{zone}/prices/current?includeVAT=false
 ```
-Returns the current electricity price for the current hour.
+Returns the current electricity price for the current hour for a specific zone.
+
+**Path Parameters:**
+- `zone`: The Norwegian price zone (NO1, NO2, NO3, NO4, or NO5)
 
 **Query Parameters:**
 - `includeVAT` (optional, default: `false`): When set to `true`, the price value is multiplied by 1.25 to include 25% VAT.
@@ -61,7 +77,7 @@ Returns the current electricity price for the current hour.
 
 **Example with VAT:**
 ```
-GET /api/prices/current?includeVAT=true
+GET /api/NO1/prices/current?includeVAT=true
 ```
 
 **Response:**
@@ -101,9 +117,12 @@ GET /api/prices/current?includeVAT=true
 
 ### Get All Prices
 ```
-GET /api/prices
+GET /api/{zone}/prices
 ```
-Returns all electricity prices available in the cache (today's prices, and tomorrow's if after 3 PM Norwegian time).
+Returns all electricity prices available in the cache (today's prices, and tomorrow's if after 3 PM Norwegian time) for a specific zone.
+
+**Path Parameters:**
+- `zone`: The Norwegian price zone (NO1, NO2, NO3, NO4, or NO5)
 
 **Response:**
 ```json
@@ -140,6 +159,17 @@ Returns all electricity prices available in the cache (today's prices, and tomor
   ...
 ]
 ```
+
+### Get All Prices Sorted
+```
+GET /api/{zone}/all
+```
+Returns all electricity prices sorted by start time in ascending order for a specific zone.
+
+**Path Parameters:**
+- `zone`: The Norwegian price zone (NO1, NO2, NO3, NO4, or NO5)
+
+**Response:** Same format as `/api/{zone}/prices`
 
 ### Health Check
 ```
