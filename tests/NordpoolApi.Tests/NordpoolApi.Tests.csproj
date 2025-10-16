@@ -23,4 +23,10 @@
     <ProjectReference Include="..\..\src\NordpoolApi\NordpoolApi.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="testdata\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
