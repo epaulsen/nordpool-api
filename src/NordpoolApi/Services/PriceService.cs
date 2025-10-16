@@ -5,7 +5,7 @@ namespace NordpoolApi.Services;
 
 public class PriceService : IPriceService
 {
-    private readonly ConcurrentBag<ElectricityPrice> _prices = new();
+    private readonly ConcurrentDictionary<(DateTime Start, string Area), ElectricityPrice> _prices = new();
     private readonly ILogger<PriceService> _logger;
 
     public PriceService(ILogger<PriceService> logger)
@@ -15,13 +15,13 @@ public class PriceService : IPriceService
 
     public Task<IEnumerable<ElectricityPrice>> GetCurrentPricesAsync()
     {
-        return Task.FromResult(_prices.AsEnumerable());
+        return Task.FromResult(_prices.Values.AsEnumerable());
     }
 
     public Task<ElectricityPrice?> GetCurrentPriceAsync()
     {
         var now = DateTime.UtcNow;
-        var currentPrice = _prices
+        var currentPrice = _prices.Values
             .Where(p => p.Start <= now && p.End > now)
             .OrderByDescending(p => p.Start)
             .FirstOrDefault();
@@ -34,8 +34,32 @@ public class PriceService : IPriceService
         _prices.Clear();
         foreach (var price in prices)
         {
-            _prices.Add(price);
+            _prices.TryAdd((price.Start, price.Area), price);
         }
         _logger.LogInformation("Updated {Count} prices", prices.Count());
+    }
+
+    public void AddPrices(IEnumerable<ElectricityPrice> prices)
+    {
+        foreach (var price in prices)
+        {
+            _prices.TryAdd((price.Start, price.Area), price);
+        }
+        _logger.LogInformation("Added {Count} prices", prices.Count());
+    }
+
+    public void RemoveOldPrices(DateTime cutoffTime)
+    {
+        var keysToRemove = _prices
+            .Where(kvp => kvp.Value.End <= cutoffTime)
+            .Select(kvp => kvp.Key)
+            .ToList();
+        
+        foreach (var key in keysToRemove)
+        {
+            _prices.TryRemove(key, out _);
+        }
+        
+        _logger.LogInformation("Removed {Count} old prices before {CutoffTime}", keysToRemove.Count, cutoffTime);
     }
 }

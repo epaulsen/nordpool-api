@@ -4,7 +4,11 @@ A .NET minimal API web service that caches Nordpool data and provides current el
 
 ## Features
 
-- 🔄 Background service that polls Nordpool data at regular intervals (configurable, default: hourly)
+- 🔄 Background service that fetches electricity prices from Nordpool API
+  - Fetches today's prices on startup
+  - Fetches tomorrow's prices after 3 PM Norwegian time
+  - Automatically retries on HTTP 204 (data not available yet)
+  - Cleans up old prices at midnight Norwegian time
 - 📊 REST API endpoints for fetching electricity prices
 - 🐳 Docker containerization support
 - ☁️ GitHub Actions workflow for automated deployment to Azure Container Apps
@@ -32,7 +36,7 @@ Returns the current electricity price for the current hour.
 ```
 GET /api/prices
 ```
-Returns all electricity prices for today (24 hours).
+Returns all electricity prices available in the cache (today's prices, and tomorrow's if after 3 PM Norwegian time).
 
 **Response:**
 ```json
@@ -77,15 +81,12 @@ The application will start on `http://localhost:5039` (or check console output f
 
 ### Configuration
 
-Edit `appsettings.json` to configure the polling interval:
+The service automatically schedules fetching based on Norwegian time (CET/CEST):
+- **Startup**: Fetches today's prices (and tomorrow's if after 3 PM)
+- **3 PM daily**: Fetches next day's prices (with 15-minute retry on HTTP 204)
+- **Midnight daily**: Removes previous day's prices
 
-```json
-{
-  "NordpoolPolling": {
-    "IntervalMinutes": 60
-  }
-}
-```
+No configuration needed - the service handles scheduling automatically.
 
 ## Running with Docker
 
@@ -238,7 +239,9 @@ nordpool-api/
 │       ├── Services/
 │       │   ├── IPriceService.cs        # Price service interface
 │       │   ├── PriceService.cs         # Price service implementation
-│       │   ├── NordpoolPollingService.cs # Background polling service
+│       │   ├── INordpoolApiClient.cs   # Nordpool API client interface
+│       │   ├── NordpoolApiClient.cs    # Nordpool API client implementation
+│       │   ├── NordpoolPollingService.cs # Background polling service with scheduling
 │       │   └── NordpoolDataParser.cs   # Nordpool data parser
 │       ├── Program.cs                   # Application entry point & API endpoints
 │       ├── appsettings.json            # Application configuration
@@ -256,13 +259,25 @@ nordpool-api/
 ## Development Notes
 
 ### Current Implementation
-- The polling service currently generates **mock data** for demonstration purposes
-- The service polls at a configurable interval (default: 60 minutes)
-- Prices are cached in memory using a thread-safe `ConcurrentBag`
-- ✅ **Data parser** is implemented and can parse Nordpool JSON data with automatic MWh to kWh conversion
+- ✅ **Nordpool API integration** - Fetches real electricity prices from Nordpool API
+- ✅ **Scheduled fetching** - Automatically fetches prices at 3 PM and cleans up at midnight (Norwegian time)
+- ✅ **Retry logic** - Retries every 15 minutes when data is not yet available (HTTP 204)
+- ✅ **Data parser** - Parses Nordpool JSON data with automatic MWh to kWh conversion
+- ✅ **Timezone handling** - Uses Norwegian time (CET/CEST) for scheduling
+- Prices are cached in memory using a thread-safe `ConcurrentDictionary`
+
+### Data Source
+The service fetches data from:
+```
+https://dataportal-api.nordpoolgroup.com/api/DayAheadPrices
+```
+Parameters:
+- `date`: Date to fetch (YYYY-MM-DD format)
+- `market`: DayAhead
+- `deliveryArea`: NO1,NO2,NO3,NO4,NO5
+- `currency`: NOK
 
 ### TODO
-- Replace mock data with actual Nordpool API integration (parser is ready to use)
 - Add support for multiple currencies
 - Add price history and forecasting
 - Add caching layer (Redis/Azure Cache)
