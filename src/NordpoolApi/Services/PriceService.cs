@@ -29,6 +29,12 @@ public class PriceService : IPriceService
         return Task.FromResult(currentPrice);
     }
 
+    public Task<IEnumerable<ElectricityPrice>> GetAllPricesSortedAsync()
+    {
+        var sortedPrices = _prices.Values.OrderBy(p => p.Start).AsEnumerable();
+        return Task.FromResult(sortedPrices);
+    }
+
     public void UpdatePrices(IEnumerable<ElectricityPrice> prices)
     {
         _prices.Clear();

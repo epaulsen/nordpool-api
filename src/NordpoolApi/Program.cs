@@ -32,6 +32,14 @@ app.MapGet("/api/prices", async (IPriceService priceService) =>
 .WithName("GetElectricityPrices")
 .WithDescription("Get all electricity prices for today");
 
+app.MapGet("/api/prices/all", async (IPriceService priceService) =>
+{
+    var prices = await priceService.GetAllPricesSortedAsync();
+    return Results.Ok(prices);
+})
+.WithName("GetAllElectricityPricesSorted")
+.WithDescription("Get all electricity prices sorted by start time in ascending order");
+
 app.MapGet("/api/prices/current", async (IPriceService priceService, bool includeVAT = false) =>
 {
     var currentPrice = await priceService.GetCurrentPriceAsync();
