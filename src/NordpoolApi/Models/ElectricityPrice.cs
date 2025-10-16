@@ -5,6 +5,7 @@ public record ElectricityPrice
     public DateTime Start { get; init; }
     public DateTime End { get; init; }
     public decimal Price { get; init; }
+    public decimal SubsidizedPrice { get; init; }
     public string Currency { get; init; } = "NOK";
     public string Area { get; init; } = "NO1";
     public IList<QuarterlyPrice>? QuarterlyPrices { get; init; }

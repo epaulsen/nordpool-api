@@ -71,11 +71,25 @@ public class NordpoolDataParser
                 Price = p.Price
             }).ToList();
             
+            // Calculate subsidized price according to Norwegian government policy
+            // If price > 0.75 kr: government pays 90% of amount above 0.75 kr
+            // Consumer pays: 0.75 + 0.1 * (price - 0.75)
+            decimal subsidizedPrice;
+            if (averagePrice > 0.75m)
+            {
+                subsidizedPrice = 0.75m + 0.1m * (averagePrice - 0.75m);
+            }
+            else
+            {
+                subsidizedPrice = averagePrice;
+            }
+            
             hourlyPrices.Add(new ElectricityPrice
             {
                 Start = hourStart,
                 End = hourEnd,
                 Price = averagePrice,
+                SubsidizedPrice = subsidizedPrice,
                 Currency = nordpoolData.Currency ?? "NOK",
                 Area = area,
                 QuarterlyPrices = quarterlyPriceObjects

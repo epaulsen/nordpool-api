@@ -181,4 +181,69 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
         var hourSpan = price.End - price.Start;
         Assert.Equal(1, hourSpan.TotalHours);
     }
+
+    [Fact]
+    public async Task GetAllPrices_IncludesSubsidizedPrice()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/prices");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        var prices = await response.Content.ReadFromJsonAsync<List<ElectricityPrice>>();
+        Assert.NotNull(prices);
+        Assert.NotEmpty(prices);
+        
+        // Verify each price has a subsidized price
+        foreach (var price in prices)
+        {
+            // SubsidizedPrice should always be set (never 0)
+            Assert.True(price.SubsidizedPrice > 0, "SubsidizedPrice should be greater than 0");
+            
+            // If price <= 0.75, subsidized price should equal the price
+            if (price.Price <= 0.75m)
+            {
+                Assert.Equal(price.Price, price.SubsidizedPrice);
+            }
+            else
+            {
+                // If price > 0.75, subsidized price should be calculated correctly
+                var expectedSubsidizedPrice = 0.75m + 0.1m * (price.Price - 0.75m);
+                Assert.Equal(expectedSubsidizedPrice, price.SubsidizedPrice);
+                // SubsidizedPrice should always be less than the original price when subsidy applies
+                Assert.True(price.SubsidizedPrice < price.Price);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task GetCurrentPrice_IncludesSubsidizedPrice()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/prices/current");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        var price = await response.Content.ReadFromJsonAsync<ElectricityPrice>();
+        Assert.NotNull(price);
+        
+        // Verify price has a subsidized price
+        Assert.True(price.SubsidizedPrice > 0, "SubsidizedPrice should be greater than 0");
+        
+        // If price <= 0.75, subsidized price should equal the price
+        if (price.Price <= 0.75m)
+        {
+            Assert.Equal(price.Price, price.SubsidizedPrice);
+        }
+        else
+        {
+            // If price > 0.75, subsidized price should be calculated correctly
+            var expectedSubsidizedPrice = 0.75m + 0.1m * (price.Price - 0.75m);
+            Assert.Equal(expectedSubsidizedPrice, price.SubsidizedPrice);
+            // SubsidizedPrice should always be less than the original price when subsidy applies
+            Assert.True(price.SubsidizedPrice < price.Price);
+        }
+    }
 }
