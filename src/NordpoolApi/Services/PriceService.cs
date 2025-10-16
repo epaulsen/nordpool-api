@@ -29,6 +29,17 @@ public class PriceService : IPriceService
         return Task.FromResult(currentPrice);
     }
 
+    public Task<ElectricityPrice?> GetCurrentPriceAsync(string zone)
+    {
+        var now = DateTime.UtcNow;
+        var currentPrice = _prices.Values
+            .Where(p => p.Area.Equals(zone, StringComparison.OrdinalIgnoreCase) && p.Start <= now && p.End > now)
+            .OrderByDescending(p => p.Start)
+            .FirstOrDefault();
+
+        return Task.FromResult(currentPrice);
+    }
+
     public Task<IEnumerable<ElectricityPrice>> GetAllPricesSortedAsync()
     {
         var sortedPrices = _prices.Values.OrderBy(p => p.Start).AsEnumerable();

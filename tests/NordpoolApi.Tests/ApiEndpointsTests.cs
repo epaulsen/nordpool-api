@@ -70,7 +70,7 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetCurrentPrice_ReturnsCurrentPrice()
     {
         // Act
-        var response = await _client.GetAsync("/api/prices/current");
+        var response = await _client.GetAsync("/api/NO1/prices/current");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -91,7 +91,7 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetCurrentPrice_WithIncludeVATFalse_ReturnsOriginalPrice()
     {
         // Act
-        var response = await _client.GetAsync("/api/prices/current?includeVAT=false");
+        var response = await _client.GetAsync("/api/NO1/prices/current?includeVAT=false");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -107,12 +107,12 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetCurrentPrice_WithIncludeVATTrue_ReturnsPriceWithVAT()
     {
         // Arrange - Get the price without VAT first
-        var responseWithoutVAT = await _client.GetAsync("/api/prices/current?includeVAT=false");
+        var responseWithoutVAT = await _client.GetAsync("/api/NO1/prices/current?includeVAT=false");
         var priceWithoutVAT = await responseWithoutVAT.Content.ReadFromJsonAsync<ElectricityPrice>();
         Assert.NotNull(priceWithoutVAT);
         
         // Act - Get the price with VAT
-        var responseWithVAT = await _client.GetAsync("/api/prices/current?includeVAT=true");
+        var responseWithVAT = await _client.GetAsync("/api/NO1/prices/current?includeVAT=true");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, responseWithVAT.StatusCode);
@@ -183,7 +183,7 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetCurrentPrice_ReturnsHourlyAverageWithQuarterlyPrices()
     {
         // Act
-        var response = await _client.GetAsync("/api/prices/current");
+        var response = await _client.GetAsync("/api/NO1/prices/current");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -243,7 +243,7 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetCurrentPrice_IncludesSubsidizedPrice()
     {
         // Act
-        var response = await _client.GetAsync("/api/prices/current");
+        var response = await _client.GetAsync("/api/NO1/prices/current");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -395,5 +395,40 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
         // Verify the prices are different (NO2 should be 0.005 kr/kWh higher based on test data: 5 NOK/MWh = 0.005 kr/kWh)
         Assert.NotEqual(pricesNO1[0].Price, pricesNO2[0].Price);
         Assert.Equal(pricesNO1[0].Price + 0.005m, pricesNO2[0].Price);
+    }
+
+    [Fact]
+    public async Task GetCurrentPrice_WithInvalidZone_ReturnsNotFound()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/NO99/prices/current");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetCurrentPrice_WithValidZone_ReturnsOnlyPricesForThatZone()
+    {
+        // Act
+        var responseNO1 = await _client.GetAsync("/api/NO1/prices/current");
+        var responseNO2 = await _client.GetAsync("/api/NO2/prices/current");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, responseNO1.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, responseNO2.StatusCode);
+        
+        var priceNO1 = await responseNO1.Content.ReadFromJsonAsync<ElectricityPrice>();
+        var priceNO2 = await responseNO2.Content.ReadFromJsonAsync<ElectricityPrice>();
+        
+        Assert.NotNull(priceNO1);
+        Assert.NotNull(priceNO2);
+        
+        // Verify each price is for the correct zone
+        Assert.Equal("NO1", priceNO1.Area);
+        Assert.Equal("NO2", priceNO2.Area);
+        
+        // Verify the prices are different for different zones
+        Assert.NotEqual(priceNO1.Price, priceNO2.Price);
     }
 }
