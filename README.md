@@ -20,10 +20,10 @@ Returns the current electricity price for the current hour.
 **Response:**
 ```json
 {
-  "startTime": "2025-10-16T15:00:00Z",
-  "endTime": "2025-10-16T16:00:00Z",
-  "pricePerKwh": 1.7084,
-  "currency": "EUR",
+  "start": "2025-10-16T15:00:00Z",
+  "end": "2025-10-16T16:00:00Z",
+  "price": 1.7084,
+  "currency": "NOK",
   "area": "NO1"
 }
 ```
@@ -38,10 +38,10 @@ Returns all electricity prices for today (24 hours).
 ```json
 [
   {
-    "startTime": "2025-10-16T00:00:00Z",
-    "endTime": "2025-10-16T01:00:00Z",
-    "pricePerKwh": 0.8542,
-    "currency": "EUR",
+    "start": "2025-10-16T00:00:00Z",
+    "end": "2025-10-16T01:00:00Z",
+    "price": 0.8542,
+    "currency": "NOK",
     "area": "NO1"
   },
   ...

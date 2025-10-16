@@ -71,10 +71,10 @@ public class NordpoolPollingService : BackgroundService
             
             prices.Add(new ElectricityPrice
             {
-                StartTime = startTime,
-                EndTime = endTime,
-                PricePerKwh = Math.Round((decimal)(random.NextDouble() * 2 + 0.5), 4),
-                Currency = "EUR",
+                Start = startTime,
+                End = endTime,
+                Price = Math.Round((decimal)(random.NextDouble() * 2 + 0.5), 4),
+                Currency = "NOK",
                 Area = "NO1"
             });
         }

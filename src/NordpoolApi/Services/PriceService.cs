@@ -22,8 +22,8 @@ public class PriceService : IPriceService
     {
         var now = DateTime.UtcNow;
         var currentPrice = _prices
-            .Where(p => p.StartTime <= now && p.EndTime > now)
-            .OrderByDescending(p => p.StartTime)
+            .Where(p => p.Start <= now && p.End > now)
+            .OrderByDescending(p => p.Start)
             .FirstOrDefault();
 
         return Task.FromResult(currentPrice);

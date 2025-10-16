@@ -2,9 +2,9 @@ namespace NordpoolApi.Models;
 
 public record ElectricityPrice
 {
-    public DateTime StartTime { get; init; }
-    public DateTime EndTime { get; init; }
-    public decimal PricePerKwh { get; init; }
-    public string Currency { get; init; } = "EUR";
+    public DateTime Start { get; init; }
+    public DateTime End { get; init; }
+    public decimal Price { get; init; }
+    public string Currency { get; init; } = "NOK";
     public string Area { get; init; } = "NO1";
 }

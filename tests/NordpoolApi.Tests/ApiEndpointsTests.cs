@@ -54,13 +54,13 @@ public class ApiEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         
         var price = await response.Content.ReadFromJsonAsync<ElectricityPrice>();
         Assert.NotNull(price);
-        Assert.True(price.PricePerKwh > 0);
-        Assert.Equal("EUR", price.Currency);
+        Assert.True(price.Price > 0);
+        Assert.Equal("NOK", price.Currency);
         Assert.Equal("NO1", price.Area);
         
         // Verify the price is for the current hour
         var now = DateTime.UtcNow;
-        Assert.True(price.StartTime <= now);
-        Assert.True(price.EndTime > now);
+        Assert.True(price.Start <= now);
+        Assert.True(price.End > now);
     }
 }
