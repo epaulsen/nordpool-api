@@ -31,9 +31,33 @@ Returns the current electricity price for the current hour.
   "end": "2025-10-16T16:00:00Z",
   "price": 1.7084,
   "currency": "NOK",
-  "area": "NO1"
+  "area": "NO1",
+  "quarterlyPrices": [
+    {
+      "start": "2025-10-16T15:00:00Z",
+      "end": "2025-10-16T15:15:00Z",
+      "price": 1.7050
+    },
+    {
+      "start": "2025-10-16T15:15:00Z",
+      "end": "2025-10-16T15:30:00Z",
+      "price": 1.7080
+    },
+    {
+      "start": "2025-10-16T15:30:00Z",
+      "end": "2025-10-16T15:45:00Z",
+      "price": 1.7090
+    },
+    {
+      "start": "2025-10-16T15:45:00Z",
+      "end": "2025-10-16T16:00:00Z",
+      "price": 1.7116
+    }
+  ]
 }
 ```
+
+**Note:** The Nordpool API returns prices in 15-minute intervals. The service automatically computes hourly averages for end consumers, while preserving the original 15-minute values in the `quarterlyPrices` array. The `price` field represents the average of the four 15-minute prices within the hour.
 
 **Example with VAT:**
 ```
@@ -47,9 +71,33 @@ GET /api/prices/current?includeVAT=true
   "end": "2025-10-16T16:00:00Z",
   "price": 2.1355,
   "currency": "NOK",
-  "area": "NO1"
+  "area": "NO1",
+  "quarterlyPrices": [
+    {
+      "start": "2025-10-16T15:00:00Z",
+      "end": "2025-10-16T15:15:00Z",
+      "price": 1.7050
+    },
+    {
+      "start": "2025-10-16T15:15:00Z",
+      "end": "2025-10-16T15:30:00Z",
+      "price": 1.7080
+    },
+    {
+      "start": "2025-10-16T15:30:00Z",
+      "end": "2025-10-16T15:45:00Z",
+      "price": 1.7090
+    },
+    {
+      "start": "2025-10-16T15:45:00Z",
+      "end": "2025-10-16T16:00:00Z",
+      "price": 1.7116
+    }
+  ]
 }
 ```
+
+**Note:** When `includeVAT=true`, VAT is only applied to the main `price` field (the hourly average). The `quarterlyPrices` retain their original values without VAT.
 
 ### Get All Prices
 ```
@@ -65,7 +113,29 @@ Returns all electricity prices available in the cache (today's prices, and tomor
     "end": "2025-10-16T01:00:00Z",
     "price": 0.8542,
     "currency": "NOK",
-    "area": "NO1"
+    "area": "NO1",
+    "quarterlyPrices": [
+      {
+        "start": "2025-10-16T00:00:00Z",
+        "end": "2025-10-16T00:15:00Z",
+        "price": 0.8520
+      },
+      {
+        "start": "2025-10-16T00:15:00Z",
+        "end": "2025-10-16T00:30:00Z",
+        "price": 0.8540
+      },
+      {
+        "start": "2025-10-16T00:30:00Z",
+        "end": "2025-10-16T00:45:00Z",
+        "price": 0.8550
+      },
+      {
+        "start": "2025-10-16T00:45:00Z",
+        "end": "2025-10-16T01:00:00Z",
+        "price": 0.8558
+      }
+    ]
   },
   ...
 ]
@@ -239,6 +309,8 @@ The parser expects JSON data in the Nordpool API format:
 
 - ✅ Parses `multiAreaEntries` from Nordpool JSON data
 - ✅ Converts prices from MWh to kWh (divides by 1000)
+- ✅ Computes hourly averages from 15-minute intervals
+- ✅ Preserves original 15-minute prices in `quarterlyPrices` array
 - ✅ Extracts prices for all delivery areas (NO1, NO2, NO3, NO4, NO5, etc.)
 - ✅ Preserves time information (delivery start and end)
 - ✅ Returns strongly-typed `ElectricityPrice` objects
