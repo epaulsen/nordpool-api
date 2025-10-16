@@ -24,21 +24,33 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Electricity prices endpoints
-app.MapGet("/api/prices", async (IPriceService priceService) =>
+app.MapGet("/api/{zone}/prices", async (string zone, IPriceService priceService) =>
 {
-    var prices = await priceService.GetCurrentPricesAsync();
+    var prices = await priceService.GetCurrentPricesAsync(zone);
+    
+    if (!prices.Any())
+    {
+        return Results.NotFound();
+    }
+    
     return Results.Ok(prices);
 })
 .WithName("GetElectricityPrices")
-.WithDescription("Get all electricity prices for today");
+.WithDescription("Get all electricity prices for today for a specific zone");
 
-app.MapGet("/api/prices/all", async (IPriceService priceService) =>
+app.MapGet("/api/{zone}/all", async (string zone, IPriceService priceService) =>
 {
-    var prices = await priceService.GetAllPricesSortedAsync();
+    var prices = await priceService.GetAllPricesSortedAsync(zone);
+    
+    if (!prices.Any())
+    {
+        return Results.NotFound();
+    }
+    
     return Results.Ok(prices);
 })
 .WithName("GetAllElectricityPricesSorted")
-.WithDescription("Get all electricity prices sorted by start time in ascending order");
+.WithDescription("Get all electricity prices sorted by start time in ascending order for a specific zone");
 
 app.MapGet("/api/prices/current", async (IPriceService priceService, bool includeVAT = false) =>
 {

@@ -35,6 +35,24 @@ public class PriceService : IPriceService
         return Task.FromResult(sortedPrices);
     }
 
+    public Task<IEnumerable<ElectricityPrice>> GetCurrentPricesAsync(string zone)
+    {
+        var prices = _prices.Values
+            .Where(p => p.Area.Equals(zone, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(p => p.Start)
+            .AsEnumerable();
+        return Task.FromResult(prices);
+    }
+
+    public Task<IEnumerable<ElectricityPrice>> GetAllPricesSortedAsync(string zone)
+    {
+        var sortedPrices = _prices.Values
+            .Where(p => p.Area.Equals(zone, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(p => p.Start)
+            .AsEnumerable();
+        return Task.FromResult(sortedPrices);
+    }
+
     public void UpdatePrices(IEnumerable<ElectricityPrice> prices)
     {
         _prices.Clear();
