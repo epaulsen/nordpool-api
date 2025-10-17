@@ -13,13 +13,13 @@ RUN dotnet build "NordpoolApi.csproj" -c Release -o /app/build
 
 # Publish stage
 FROM build AS publish
-RUN dotnet publish "NordpoolApi.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "NordpoolApi.csproj" -c Release -o /app/publish
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-alpine AS final
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "NordpoolApi.dll"]
+ENTRYPOINT ["./NordpoolApi"]
