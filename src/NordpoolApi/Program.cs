@@ -1,8 +1,26 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using NordpoolApi.Models;
 using NordpoolApi.Services;
+using System.Text.Json.Serialization;
+using System.Reflection;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateSlimBuilder(args);
+
+// Configure JSON serialization with source generation
+// Use reflection to avoid compile-time dependency on generated code
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    var contextType = Type.GetType("NordpoolApi.AppJsonSerializerContext, NordpoolApi");
+    if (contextType != null)
+    {
+        var defaultProperty = contextType.GetProperty("Default", BindingFlags.Public | BindingFlags.Static);
+        if (defaultProperty != null)
+        {
+            var context = (JsonSerializerContext)defaultProperty.GetValue(null)!;
+            options.SerializerOptions.TypeInfoResolverChain.Add(context);
+        }
+    }
+});
 
 // Add services to the container.
 builder.Services.AddOpenApi(options =>
@@ -90,7 +108,7 @@ app.MapGet("/api/{zone}/prices/current", async Task<Results<Ok<ElectricityPrice>
 .WithSummary("Get current electricity price")
 .WithOpenApi();
 
-app.MapGet("/health", () => TypedResults.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
+app.MapGet("/health", () => TypedResults.Ok(new HealthCheckResponse { Status = "healthy", Timestamp = DateTime.UtcNow }))
     .WithName("HealthCheck")
     .WithDescription("Health check endpoint")
     .WithSummary("Health check")

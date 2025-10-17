@@ -14,7 +14,7 @@ public class NordpoolDataParser
     /// <returns>Collection of ElectricityPrice objects with hourly averages</returns>
     public IEnumerable<ElectricityPrice> ParsePrices(string jsonData)
     {
-        var nordpoolData = JsonSerializer.Deserialize<NordpoolData>(jsonData);
+        var nordpoolData = JsonSerializer.Deserialize(jsonData, AppJsonSerializerContext.Default.NordpoolData);
         
         if (nordpoolData?.MultiAreaEntries == null)
         {
