@@ -51,21 +51,6 @@ app.MapGet("/api/{zone}/prices", async Task<Results<Ok<IEnumerable<ElectricityPr
 .WithDescription("Get all electricity prices for today for a specific zone")
 .WithSummary("Get today's electricity prices");
 
-app.MapGet("/api/{zone}/all", async Task<Results<Ok<IEnumerable<ElectricityPrice>>, NotFound>> (string zone, IPriceService priceService) =>
-{
-    var prices = await priceService.GetAllPricesSortedAsync(zone);
-    
-    if (!prices.Any())
-    {
-        return TypedResults.NotFound();
-    }
-    
-    return TypedResults.Ok(prices);
-})
-.WithName("GetAllElectricityPricesSorted")
-.WithDescription("Get all electricity prices sorted by start time in ascending order for a specific zone")
-.WithSummary("Get all electricity prices sorted");
-
 app.MapGet("/api/{zone}/prices/current", async Task<Results<Ok<ElectricityPrice>, NotFound>> (string zone, IPriceService priceService, bool includeVAT = false) =>
 {
     var currentPrice = await priceService.GetCurrentPriceAsync(zone);
