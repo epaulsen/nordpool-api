@@ -7,7 +7,5 @@ public interface IPriceService
     Task<IEnumerable<ElectricityPrice>> GetCurrentPricesAsync();
     Task<ElectricityPrice?> GetCurrentPriceAsync();
     Task<ElectricityPrice?> GetCurrentPriceAsync(string zone);
-    Task<IEnumerable<ElectricityPrice>> GetAllPricesSortedAsync();
     Task<IEnumerable<ElectricityPrice>> GetCurrentPricesAsync(string zone);
-    Task<IEnumerable<ElectricityPrice>> GetAllPricesSortedAsync(string zone);
 }
