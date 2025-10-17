@@ -1,12 +1,19 @@
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# Build stage - use SDK for building but with Alpine
+FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
 WORKDIR /src
 
-# Install native build tools required for Native AOT compilation
-RUN apt-get update && apt-get install -y \
+# Install native build tools required for Native AOT compilation on Alpine
+RUN apk add --no-cache \
     clang \
-    zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/*
+    gcc \
+    g++ \
+    musl-dev \
+    lld \
+    llvm \
+    zlib-dev \
+    libgcc \
+    libstdc++ \
+    make
 
 # Copy csproj and restore dependencies
 COPY ["src/NordpoolApi/NordpoolApi.csproj", "NordpoolApi/"]
@@ -26,6 +33,9 @@ FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-alpine AS final
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
+
+# Install tzdata for timezone support
+RUN apk add --no-cache tzdata
 
 COPY --from=publish /app/publish .
 ENTRYPOINT ["./NordpoolApi"]

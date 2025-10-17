@@ -22,23 +22,6 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     }
 });
 
-// Add services to the container.
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        document.Info.Title = "Nordpool API";
-        document.Info.Version = "v1";
-        document.Info.Description = "API for retrieving electricity prices from Nordpool for Norwegian price zones (NO1-NO5)";
-        document.Info.Contact = new()
-        {
-            Name = "Nordpool API",
-            Url = new Uri("https://github.com/epaulsen/nordpool-api")
-        };
-        return Task.CompletedTask;
-    });
-});
-
 // Add Nordpool services
 builder.Services.AddHttpClient<INordpoolApiClient, NordpoolApiClient>();
 builder.Services.AddSingleton<NordpoolDataParser>();
@@ -50,8 +33,6 @@ builder.Services.AddHostedService<NordpoolPollingService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-app.MapOpenApi();
-
 app.UseHttpsRedirection();
 
 // Electricity prices endpoints
@@ -68,8 +49,7 @@ app.MapGet("/api/{zone}/prices", async Task<Results<Ok<IEnumerable<ElectricityPr
 })
 .WithName("GetElectricityPrices")
 .WithDescription("Get all electricity prices for today for a specific zone")
-.WithSummary("Get today's electricity prices")
-.WithOpenApi();
+.WithSummary("Get today's electricity prices");
 
 app.MapGet("/api/{zone}/all", async Task<Results<Ok<IEnumerable<ElectricityPrice>>, NotFound>> (string zone, IPriceService priceService) =>
 {
@@ -84,8 +64,7 @@ app.MapGet("/api/{zone}/all", async Task<Results<Ok<IEnumerable<ElectricityPrice
 })
 .WithName("GetAllElectricityPricesSorted")
 .WithDescription("Get all electricity prices sorted by start time in ascending order for a specific zone")
-.WithSummary("Get all electricity prices sorted")
-.WithOpenApi();
+.WithSummary("Get all electricity prices sorted");
 
 app.MapGet("/api/{zone}/prices/current", async Task<Results<Ok<ElectricityPrice>, NotFound>> (string zone, IPriceService priceService, bool includeVAT = false) =>
 {
@@ -105,14 +84,12 @@ app.MapGet("/api/{zone}/prices/current", async Task<Results<Ok<ElectricityPrice>
 })
 .WithName("GetCurrentElectricityPrice")
 .WithDescription("Get the current electricity price for a specific zone. Use includeVAT=true to include 25% VAT in the price.")
-.WithSummary("Get current electricity price")
-.WithOpenApi();
+.WithSummary("Get current electricity price");
 
 app.MapGet("/health", () => TypedResults.Ok(new HealthCheckResponse { Status = "healthy", Timestamp = DateTime.UtcNow }))
     .WithName("HealthCheck")
     .WithDescription("Health check endpoint")
     .WithSummary("Health check")
-    .WithOpenApi()
     .ExcludeFromDescription();
 
 app.Run();
