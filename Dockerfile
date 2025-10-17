@@ -2,6 +2,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
+# Install native build tools required for Native AOT compilation
+RUN apt-get update && apt-get install -y \
+    clang \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy csproj and restore dependencies
 COPY ["src/NordpoolApi/NordpoolApi.csproj", "NordpoolApi/"]
 RUN dotnet restore "NordpoolApi/NordpoolApi.csproj"
