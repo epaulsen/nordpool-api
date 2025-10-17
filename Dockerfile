@@ -13,7 +13,7 @@ RUN dotnet build "NordpoolApi.csproj" -c Release -o /app/build
 
 # Publish stage
 FROM build AS publish
-RUN dotnet publish "NordpoolApi.csproj" -c Release -o /app/publish
+RUN dotnet publish "NordpoolApi.csproj" -c Release -o /app/publish /p:PublishTrimmed=true /p:SelfContained=true
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-alpine AS final
