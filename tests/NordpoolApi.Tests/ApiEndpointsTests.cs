@@ -17,43 +17,6 @@ public class ApiEndpointsTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task OpenApiEndpoint_ReturnsValidOpenApiSpecification()
-    {
-        // Act
-        var response = await _client.GetAsync("/openapi/v1.json");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
-        
-        var content = await response.Content.ReadAsStringAsync();
-        
-        // Verify it's valid JSON
-        var openApiDoc = JsonDocument.Parse(content);
-        
-        // Verify it has the required OpenAPI structure
-        Assert.True(openApiDoc.RootElement.TryGetProperty("openapi", out var openApiVersion));
-        Assert.Equal("3.0.1", openApiVersion.GetString());
-        
-        // Verify it has info section
-        Assert.True(openApiDoc.RootElement.TryGetProperty("info", out var info));
-        Assert.True(info.TryGetProperty("title", out var title));
-        Assert.Equal("Nordpool API", title.GetString());
-        
-        // Verify it has paths section
-        Assert.True(openApiDoc.RootElement.TryGetProperty("paths", out var paths));
-        Assert.True(paths.TryGetProperty("/api/{zone}/prices", out _));
-        Assert.True(paths.TryGetProperty("/api/{zone}/all", out _));
-        Assert.True(paths.TryGetProperty("/api/{zone}/prices/current", out _));
-        
-        // Verify it has components/schemas section with ElectricityPrice
-        Assert.True(openApiDoc.RootElement.TryGetProperty("components", out var components));
-        Assert.True(components.TryGetProperty("schemas", out var schemas));
-        Assert.True(schemas.TryGetProperty("ElectricityPrice", out _));
-        Assert.True(schemas.TryGetProperty("QuarterlyPrice", out _));
-    }
-
-    [Fact]
     public async Task HealthEndpoint_ReturnsHealthy()
     {
         // Act

@@ -11,8 +11,6 @@
     <InternalsVisibleTo Include="NordpoolApi.Tests" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
-  </ItemGroup>
+
 
 </Project>
